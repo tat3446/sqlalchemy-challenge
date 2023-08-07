@@ -44,7 +44,8 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
+        f"Date range options 2010-01-01 to 2017-08-23<br/>"
+        f"To use api below enter date at end of api with format yyyy-mm-dd<br/>"
         f"/api/v1.0/<start><end>"
 
     )
@@ -58,8 +59,11 @@ def precipitation():
 
     """Query results from 12-month precipitation analysis"""
     # Query 12 months
-    results = session.query(Measurement.date, Measurement.prcp).all()
-
+    results = session.query(Measurement.date, Measurement.prcp).\
+            filter(Measurement.date <= '2017-08-23').\
+            filter(Measurement.date > '2016-08-23').\
+            order_by(Measurement.date).all()
+    
     session.close()
 
     # Create a dictionary from the row data and append to a list of measurements
@@ -75,6 +79,82 @@ def precipitation():
     return jsonify(all_precip)
 
 
+@app.route("/api/v1.0/stations")
+def stations():
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    """Return a JSON list of stations from dataset"""
+    # Query all stations
+    results = session.query(Station.station).all()
+
+    session.close()
+
+    # Convert list of tuples into normal list
+    all_stations = list(np.ravel(results))
+
+    return jsonify(all_stations)
+
+
+
+@app.route("/api/v1.0/tobs")
+def tobs():
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    """Return dates and temps of most-active station previous year"""
+    # Query most active station
+    results = session.query(Measurement.date, Measurement.tobs).\
+            filter(Measurement.date <= '2017-08-23').\
+            filter(Measurement.date > '2016-08-23').\
+            filter(Measurement.station == 'USC00519281').all()
+
+    session.close()
+
+    # Convert list of tuples into normal list
+    dates_temps = list(np.ravel(results))
+
+    return jsonify(dates_temps)
+
+
+
+@app.route("/api/v1.0/<start>")
+def temps(start):
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    """Calculate min temp, avg tem, and max temp for dates selected, 
+    or a 404 if not."""
+    """Query temps by date range"""
+
+    start_temps = session.query(Measurement.date, Measurement.tobs).\
+            filter(Measurement.date >= {start}).\
+            filter(Measurement.date <= '2017-08-23').all()
+    
+    canonicalized = start.replace(" ", "").lower()
+    for temps in start_temps:
+                search_term = temps["start"].replace(" ", "").lower()
+
+                if search_term == canonicalized:
+                    return jsonify(temps)
+
+    return jsonify({"error": "Date not found."}), 404
+
+    session.close()
+
+        # Create a dictionary from the specified data 
+    temperature = []
+    for tobs in start_temps:
+        temps_dict = {}
+        temps_dict["tmin"] = func.min(Measurement.tobs)
+        temps_dict["tavg"] = func.avg(Measurement.tobs)
+        temps_dict["tmax"] = func.max(Measurement.tobs)
+        temperature.append(temps_dict)
+
+    # return jsonify(tmin_tavg_tmax)
+    return jsonify(temperature)
+
+    # return jsonify({"error": "Date not found."}), 404
 
 
 if __name__ == "__main__":
