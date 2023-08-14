@@ -128,31 +128,53 @@ def temps(start):
     """Query temps by date range"""
 
     start_temps = session.query(Measurement.date, Measurement.tobs).\
-            filter(Measurement.date >= {start}).\
-            filter(Measurement.date <= '2017-08-23').all()
-    
-    canonicalized = start.replace(" ", "").lower()
-    for temps in start_temps:
-                search_term = temps["start"].replace(" ", "").lower()
+            filter(Measurement.date <= '2017-08-23').\
+            filter(Measurement.date >= start).\
+            order_by(Measurement.date).all()
+   
 
-                if search_term == canonicalized:
-                    return jsonify(temps)
+    session.close()
+    tmin = "0"
+    tmax = "0"
+    tavg = "0"
 
-    return jsonify({"error": "Date not found."}), 404
+    # for tobs in 
+
+    # temp_all = [start_temps["tmin": {func.min(Measurement.tobs)}, "tavg": {func.avg(Measurement.tobs)}, "tmax": {func.max(Measurement.tobs)}]]
+    # print (temp_all)
+    all_temps = []
+
+    # for temps in start_temps:
+    #     all_temps.append(temps)
+    #     func.min = tmin[all_temps]
+    #     func.avg = tavg[all_temps]
+    #     func.max = tmax[all_temps]
+
+    tmin = session.query(func.min(Measurement.tobs))
 
     session.close()
 
-        # Create a dictionary from the specified data 
-    temperature = []
-    for tobs in start_temps:
-        temps_dict = {}
-        temps_dict["tmin"] = func.min(Measurement.tobs)
-        temps_dict["tavg"] = func.avg(Measurement.tobs)
-        temps_dict["tmax"] = func.max(Measurement.tobs)
-        temperature.append(temps_dict)
+    # Create a dictionary from the row data and append to a list of measurements
+    # all_temps = []
+    # for date, tobs in start_temps:
+    #     temps_dict = {}
+    #     temps_dict["day"] = date
+    #     temps_dict["tobs"] = tobs
+    #     all_temps.append(temps_dict)
+    # Create a dictionary from the specified data 
+    # temperature = []
+    # for tobs in start_temps:
+    #     temps_dict = {}
+    #     temps_dict["tmin"] = func.min(Measurement.tobs)
+    #     temps_dict["tavg"] = func.avg(Measurement.tobs)
+    #     temps_dict["tmax"] = func.max(Measurement.tobs)
+    #     temperature.append(temps_dict)
+
+    # print(temperature)
 
     # return jsonify(tmin_tavg_tmax)
-    return jsonify(temperature)
+
+    # return jsonify({'tmin': tmin})
 
     # return jsonify({"error": "Date not found."}), 404
 
