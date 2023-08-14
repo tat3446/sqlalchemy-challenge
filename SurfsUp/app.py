@@ -1,5 +1,6 @@
 # Import the dependencies.
 import numpy as np
+import datetime as dt
 
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
@@ -9,7 +10,7 @@ from sqlalchemy import create_engine, func
 from flask import Flask, jsonify
 
 #################################################
-# Database Setup
+# Database Setup.0/
 #################################################
 engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 
@@ -45,8 +46,10 @@ def welcome():
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
         f"Date range options 2010-01-01 to 2017-08-23<br/>"
-        f"To use api below enter date at end of api with format yyyy-mm-dd<br/>"
-        f"/api/v1.0/<start><end>"
+        f"To use api below enter date at end of api with format /yyyymmdd<br/>"
+        f"/api/v1.0/startonly/<start><br/>"
+        f"To specify both start and end dates, enter with format /YYYYmmddYYYYmmdd<br/>"
+        f"/api/v1.0/<startday><end>"
 
     )
 
@@ -118,65 +121,47 @@ def tobs():
 
 
 
-@app.route("/api/v1.0/<start>")
+@app.route("/api/v1.0/startonly/<start>")
 def temps(start):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Calculate min temp, avg tem, and max temp for dates selected, 
-    or a 404 if not."""
+    """Calculate min temp, avg tem, and max temp for start date selected""" 
     """Query temps by date range"""
 
-    start_temps = session.query(Measurement.date, Measurement.tobs).\
-            filter(Measurement.date <= '2017-08-23').\
-            filter(Measurement.date >= start).\
-            order_by(Measurement.date).all()
+    sel = [func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)]
+
+    start = dt.datetime.strptime(start, "%Y%m%d")
+
+    start_temps = session.query(*sel).filter(Measurement.date >= start).filter(Measurement.date <= 20170823).all()
    
-
-    session.close()
-    tmin = "0"
-    tmax = "0"
-    tavg = "0"
-
-    # for tobs in 
-
-    # temp_all = [start_temps["tmin": {func.min(Measurement.tobs)}, "tavg": {func.avg(Measurement.tobs)}, "tmax": {func.max(Measurement.tobs)}]]
-    # print (temp_all)
-    all_temps = []
-
-    # for temps in start_temps:
-    #     all_temps.append(temps)
-    #     func.min = tmin[all_temps]
-    #     func.avg = tavg[all_temps]
-    #     func.max = tmax[all_temps]
-
-    tmin = session.query(func.min(Measurement.tobs))
-
     session.close()
 
-    # Create a dictionary from the row data and append to a list of measurements
-    # all_temps = []
-    # for date, tobs in start_temps:
-    #     temps_dict = {}
-    #     temps_dict["day"] = date
-    #     temps_dict["tobs"] = tobs
-    #     all_temps.append(temps_dict)
-    # Create a dictionary from the specified data 
-    # temperature = []
-    # for tobs in start_temps:
-    #     temps_dict = {}
-    #     temps_dict["tmin"] = func.min(Measurement.tobs)
-    #     temps_dict["tavg"] = func.avg(Measurement.tobs)
-    #     temps_dict["tmax"] = func.max(Measurement.tobs)
-    #     temperature.append(temps_dict)
+    all_temps = list(np.ravel(start_temps))
 
-    # print(temperature)
+    return jsonify(all_temps)
 
-    # return jsonify(tmin_tavg_tmax)
 
-    # return jsonify({'tmin': tmin})
+@app.route("/api/v1.0/<startday><end>")
+def tempsstartend(startday):
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
 
-    # return jsonify({"error": "Date not found."}), 404
+    """Calculate min temp, avg tem, and max temp for start and end dates selected""" 
+    """Query temps by date range"""
+
+    sel = [func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)]
+
+    startday = dt.datetime.strptime(startday, "%Y%m%d")
+    end = dt.datetime.strptime(end, "%Y%m%d")
+
+    startend_temps = session.query(*sel).filter(Measurement.date >= startday).filter(Measurement.date <= end).all()
+   
+    session.close()
+
+    alltemps = list(np.ravel(startend_temps))
+
+    return jsonify(alltemps)
 
 
 if __name__ == "__main__":
